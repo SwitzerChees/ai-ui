@@ -5,10 +5,15 @@
         class="grow bg-slate-100 dark:bg-slate-600 text-slate-700 dark:text-gray-50 rounded p-4 flex flex-col gap-2 overflow-y-auto"
         ref="chat"
       >
-        <div v-for="m in messages" key="m.id" class="flex flex-col">
+        <div
+          v-for="m in messages.filter((m) => m.role !== 'system')"
+          key="m.id"
+          class="flex flex-col"
+        >
           <span class="font-bold">{{ m.role === "user" ? "User" : "AI" }}</span>
-          <span>{{ m.content }}</span>
+          <vue-markdown :source="m.content" />
         </div>
+        <div ref="srcrollTo" class="h-8">&nbsp</div>
       </div>
       <div class="flex items-center gap-2">
         <input
@@ -46,18 +51,29 @@
 import { onMounted } from "vue";
 import { initFlowbite } from "flowbite";
 import { useChat } from "ai/vue";
-const { messages, input, handleSubmit, isLoading } = useChat();
+import VueMarkdown from "vue-markdown-render";
 
-const chat = ref<HTMLElement>();
+const scrollLastMessageIntoView = () => {
+  srcrollTo.value?.scrollIntoView({ behavior: "smooth", block: "end" });
+};
+
+const { messages, input, handleSubmit, isLoading } = useChat({
+  onFinish: scrollLastMessageIntoView,
+  initialMessages: [
+    {
+      id: "1",
+      role: "system",
+      content:
+        "You are a helpful assistant the will exclusively respond in the MARKDOWN format.",
+    },
+  ],
+});
+
+const srcrollTo = ref<HTMLElement>();
 
 onMounted(() => {
   initFlowbite();
 });
-
-const scrollLastMessageIntoView = () => {
-  const lastElement = chat.value?.lastElementChild;
-  lastElement?.scrollIntoView();
-};
 
 const submit = (e: any) => {
   handleSubmit(e);
